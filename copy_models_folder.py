@@ -49,6 +49,8 @@ def mirror(source_folder, destination_folder):
     with tqdm(total=total_bytes, unit="B", unit_scale=True, desc="Copying") as progress:
         for src_path, dst_path in files_to_copy:
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+            # Print the file being copied
+            print(f"Copying: {src_path} -> {dst_path}")
             try:
                 with open(src_path, "rb") as s, open(dst_path, "wb") as d:
                     while True:
