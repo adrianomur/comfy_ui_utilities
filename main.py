@@ -7,7 +7,17 @@ from tqdm import tqdm
 
 confyui_model_folder = '/Volumes/shared/ComfyUI/models'
 
-available_folders = ['diffusion_models', 'vae', 'text_encoders', 'loras', 'controlnet']
+available_folders = ['diffusion_models',
+                     'vae',
+                     'text_encoders',
+                     'loras',
+                     'controlnet',
+                     'checkpoints',
+                     'model_patches',
+                     'clip_vision',
+                     'upscale_models',
+                     'audio_encoders',
+                     'unet']
 
 def download_file(url: str,
                   folder: str,
