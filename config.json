@@ -1,0 +1,10 @@
+{
+  "mirror-copy": {
+    "source": "from/folder",
+    "destination": "to/folder"
+  },
+  "download": {
+    "url": "https://example.com/file.zip",
+    "folder": "models"
+  }
+}

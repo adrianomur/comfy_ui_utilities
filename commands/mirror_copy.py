@@ -3,9 +3,10 @@ import os
 import shutil
 import argparse
 from tqdm import tqdm
+from config import load_config
 
 
-def mirror(source_folder, destination_folder):
+def mirror_copy(source_folder, destination_folder):
     """
     Mirror-copy files from source_folder to destination_folder.
     - Copies files and creates directories as needed.
@@ -13,6 +14,9 @@ def mirror(source_folder, destination_folder):
     - Removes files/dirs in destination that do not exist in source (true mirror).
     - Shows a progress bar for bytes copied.
     """
+    if not source_folder or not destination_folder:
+        raise ValueError("Source and destination folders are required")
+    
     if not os.path.isdir(source_folder):
         raise ValueError(f"Source folder does not exist or is not a directory: {source_folder}")
 
@@ -74,29 +78,3 @@ def mirror(source_folder, destination_folder):
                         pass
                 except OSError:
                     pass
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="mirror-copy",
-        description="Mirror-copy files from source folder to destination folder with progress."
-    )
-    parser.add_argument("source", help="Source folder to mirror")
-    parser.add_argument("destination", help="Destination folder to mirror into")
-    return parser
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    try:
-        mirror(args.source, args.destination)
-        print("Mirror copy completed.")
-        return 0
-    except Exception as e:
-        print(f"Error: {e}")
-        return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
