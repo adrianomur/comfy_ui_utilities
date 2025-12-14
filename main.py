@@ -18,12 +18,13 @@ def build_parser() -> argparse.ArgumentParser:
     download_config = config.get("download", {})
     p_dl = sub.add_parser("download",
                           help="Download a file to a folder")
-    p_dl.add_argument("url",
-                      help="URL of the file to download")
+    p_dl.add_argument("--urls",
+                      nargs='+',
+                      help="URLs of the files to download")
     p_dl.add_argument("--model-folder",
                       default=download_config.get("model_folder"),
                       help="the folder of the model or component")
-    p_dl.add_argument("folder",
+    p_dl.add_argument("--folder",
                       nargs='?',
                       default=None,
                       help="the folder of the model or component")
@@ -48,9 +49,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "download":
-        try:
-            path = download_file(args.url, args.model_folder, args.folder)
-            print(f"Saved to: {path}")
+        try:    
+            for url in args.urls:
+                path = download_file(url, args.model_folder, args.folder)
+                print(f"Saved {url} to: {path}")
             return 0
         except RuntimeError as e:
             print(f"Error: {e}", file=sys.stderr)
