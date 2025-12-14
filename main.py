@@ -20,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
                           help="Download a file to a folder")
     p_dl.add_argument("--urls",
                       nargs='+',
+                      required=True,
                       help="URLs of the files to download")
     p_dl.add_argument("--model-folder",
                       default=download_config.get("model_folder"),
@@ -49,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "download":
-        try:    
+        try:
             for url in args.urls:
                 path = download_file(url, args.model_folder, args.folder)
                 print(f"Saved {url} to: {path}")
