@@ -15,16 +15,30 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command",
                                 required=True)
 
-    
     download_config = config.get("download", {})
-    p_dl = sub.add_parser("download", help="Download a file to a folder")
-    p_dl.add_argument("url", nargs='?', default=download_config.get("url"), help="URL of the file to download")
-    p_dl.add_argument("folder", nargs='?', default=download_config.get("folder"), help="the folder of the model or component")
+    p_dl = sub.add_parser("download",
+                          help="Download a file to a folder")
+    p_dl.add_argument("url",
+                      help="URL of the file to download")
+    p_dl.add_argument("--model-folder",
+                      default=download_config.get("model_folder"),
+                      help="the folder of the model or component")
+    p_dl.add_argument("folder",
+                      nargs='?',
+                      default=None,
+                      help="the folder of the model or component")
 
     mirror_copy_config = config.get("mirror-copy", {})
-    p_cp = sub.add_parser("mirror-copy", help="Mirror-copy models from source to destination with progress")
-    p_cp.add_argument("source", nargs='?', default=mirror_copy_config.get("source"), help="Source folder to mirror")
-    p_cp.add_argument("destination", nargs='?', default=mirror_copy_config.get("destination"), help="Destination folder to mirror into")
+    p_cp = sub.add_parser("mirror-copy",
+                          help="Mirror-copy models from source to destination with progress")
+    p_cp.add_argument("source",
+                      nargs='?',
+                      default=mirror_copy_config.get("source"),
+                      help="Source folder to mirror")
+    p_cp.add_argument("destination",
+                      nargs='?',
+                      default=mirror_copy_config.get("destination"),
+                      help="Destination folder to mirror into")
 
     return parser
 
@@ -35,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "download":
         try:
-            path = download_file(args.url, args.folder)
+            path = download_file(args.url, args.model_folder, args.folder)
             print(f"Saved to: {path}")
             return 0
         except RuntimeError as e:

@@ -4,7 +4,6 @@
     "destination": "to/folder"
   },
   "download": {
-    "url": "https://example.com/file.zip",
-    "folder": "models"
+    "model_folder": "/Volumes/shared/ComfyUI/models"
   }
 }

@@ -3,8 +3,6 @@ import requests
 import urllib.request
 from tqdm import tqdm
 
-MODELS_FOLDER = '/Volumes/shared/ComfyUI/models'
-
 ALLOWED_FOLDERS = ['diffusion_models',
                    'vae',
                    'text_encoders',
@@ -19,14 +17,20 @@ ALLOWED_FOLDERS = ['diffusion_models',
 
 
 def download_file(url: str,
-                  folder: str,
+                  model_folder: str,
+                  folder: str | None = None,
                   filename: str | None = None) -> str:
 
+    if not folder:
+        url_parts = urllib.request.urlparse(url).path.split('/')
+        folder = url_parts[-2]
+        return
+    
     if folder not in ALLOWED_FOLDERS:
         raise ValueError(
             f"Invalid type: {folder}. Available types: {ALLOWED_FOLDERS}")
 
-    folder = os.path.join(MODELS_FOLDER, folder)
+    folder = os.path.join(model_folder, folder)
     os.makedirs(folder, exist_ok=True)
     if filename is None:
         filename = os.path.basename(
