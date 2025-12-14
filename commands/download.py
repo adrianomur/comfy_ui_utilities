@@ -24,7 +24,6 @@ def download_file(url: str,
     if not folder:
         url_parts = urllib.request.urlparse(url).path.split('/')
         folder = url_parts[-2]
-        return
     
     if folder not in ALLOWED_FOLDERS:
         raise ValueError(
