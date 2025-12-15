@@ -2,6 +2,7 @@ import sys
 import argparse
 
 from commands.mirror_copy import mirror_copy
+from commands.mirror_copy_remote import mirror_copy_remote
 from commands.download import download_file
 from config import load_config
 
@@ -42,6 +43,18 @@ def build_parser() -> argparse.ArgumentParser:
                       default=mirror_copy_config.get("destination"),
                       help="Destination folder to mirror into")
 
+    mirror_copy_remote_config = config.get("mirror-copy-remote", {})
+    p_cp_remote = sub.add_parser("mirror-copy-remote",
+                                 help="Mirror-copy models from source to remote destination using rsync")
+    p_cp_remote.add_argument("source",
+                             nargs='?',
+                             default=mirror_copy_remote_config.get("source"),
+                             help="Source folder to mirror")
+    p_cp_remote.add_argument("destination",
+                             nargs='?',
+                             default=mirror_copy_remote_config.get("destination"),
+                             help="Destination folder (local or remote in format user@host:/path)")
+
     return parser
 
 
@@ -63,6 +76,14 @@ def main(argv: list[str] | None = None) -> int:
         try:
             mirror_copy(args.source, args.destination)
             print("Mirror copy completed.")
+            return 0
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
+    if args.command == "mirror-copy-remote":
+        try:
+            mirror_copy_remote(args.source, args.destination)
             return 0
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)

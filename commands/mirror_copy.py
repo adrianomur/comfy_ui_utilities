@@ -1,9 +1,7 @@
 
 import os
 import shutil
-import argparse
 from tqdm import tqdm
-from config import load_config
 
 
 def mirror_copy(source_folder, destination_folder):
