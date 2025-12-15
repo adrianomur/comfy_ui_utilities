@@ -1,81 +1,80 @@
 import os
 import subprocess
+import re
 
 
 def mirror_copy_remote(source_folder, destination_folder):
     """
-    Mirror-copy files from source_folder to destination_folder (can be remote).
-    - Supports remote destinations in format: user@host:/path or host:/path
-    - Uses rsync for efficient remote copying
-    - Copies files and creates directories as needed
-    - Skips copying if the destination file already exists with identical size and mtime
-    - Removes files/dirs in destination that do not exist in source (true mirror)
-    - Shows progress output from rsync
+    Mirror-copy files on a remote machine using SSH and rsync.
+    SSHs into the remote machine and runs rsync from source_folder to destination_folder
+    on that machine.
 
     Args:
-        source_folder: Local source folder path
-        destination_folder: Destination path (local or remote in format user@host:/path)
+        source_folder: Path on the remote machine to copy from
+        destination_folder: Destination in format 'user@host:/path' where:
+                           - user@host is the SSH connection info
+                           - /path is the destination path on the remote machine
     """
     if not source_folder or not destination_folder:
         raise ValueError("Source and destination folders are required")
 
-    if not os.path.isdir(source_folder):
+    # Parse destination to extract SSH connection info and remote path
+    # Format: user@host:/path
+    match = re.match(r'^([^@]+@[^:]+):(.+)$', destination_folder)
+    if not match:
         raise ValueError(
-            f"Source folder does not exist or is not a directory: {source_folder}")
-
-    # Ensure source folder ends with / for rsync to copy contents properly
-    if not source_folder.endswith(os.sep):
-        source_folder = source_folder + os.sep
-
-    # Check if rsync is available
-    try:
-        subprocess.run(["rsync", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        raise RuntimeError(
-            "rsync is not installed or not available in PATH. Please install rsync to use remote copying.")
-
-    # Build rsync command
-    # -a: archive mode (preserves permissions, timestamps, etc.)
-    # -v: verbose
-    # --progress: show progress
-    # --delete: delete files in destination that don't exist in source (mirror behavior)
-    # --human-readable: show sizes in human-readable format
-    rsync_args = [
-        "rsync",
-        "-av",
-        "--progress",
-        "--delete",
-        "--human-readable",
-        source_folder,
-        destination_folder
-    ]
-
-    print(f"Mirror copying from {source_folder} to {destination_folder}")
-    print(f"Running: {' '.join(rsync_args)}")
-
-    try:
-        # Run rsync and capture output in real-time
-        process = subprocess.Popen(
-            rsync_args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1
+            f"Destination must be in format 'user@host:/path', got: {destination_folder}"
         )
 
-        # Print output line by line
-        for line in process.stdout:
-            print(line.rstrip())
+    ssh_connection = match.group(1)  # e.g., "adriano@frozen"
+    # e.g., "/mnt/c/Users/adriano/Desktop/models"
+    remote_destination = match.group(2)
 
-        process.wait()
+    # Ensure source_folder is an absolute path
+    if not source_folder.startswith('/'):
+        raise ValueError(
+            f"Source folder must be an absolute path, got: {source_folder}")
 
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"rsync failed with exit code {process.returncode}")
+    # Ensure remote_destination is an absolute path
+    if not remote_destination.startswith('/'):
+        raise ValueError(
+            f"Destination path must be an absolute path, got: {remote_destination}"
+        )
 
+    # Build the rsync command to run on the remote machine
+    # rsync -av --delete source_folder/ destination_folder/
+    # -a: archive mode (preserves permissions, timestamps, etc.)
+    # -v: verbose
+    # --delete: delete files in destination that don't exist in source (mirror behavior)
+    rsync_cmd = [
+        'rsync',
+        '-av',
+        '--delete',
+        f'{source_folder.rstrip("/")}/',
+        f'{remote_destination.rstrip("/")}/'
+    ]
+
+    # SSH into the machine and run rsync
+    ssh_cmd = ['ssh', ssh_connection] + rsync_cmd
+
+    print(f"Connecting to {ssh_connection}...")
+    print(f"Running: rsync {' '.join(rsync_cmd)}")
+
+    try:
+        # Run the SSH command with rsync
+        result = subprocess.run(
+            ssh_cmd,
+            check=True,
+            capture_output=False,  # Show output in real-time
+            text=True
+        )
         print("Mirror copy completed successfully.")
-
+        return result.returncode
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"rsync command failed: {e}")
-    except Exception as e:
-        raise RuntimeError(f"Error during remote mirror copy: {e}")
+        raise RuntimeError(
+            f"Failed to execute rsync on remote machine: {e}"
+        ) from e
+    except FileNotFoundError:
+        raise RuntimeError(
+            "SSH command not found. Please ensure SSH is installed and available in PATH."
+        )
