@@ -1,6 +1,7 @@
 import os
 import subprocess
 import re
+import sys
 
 
 def mirror_copy_remote(source_folder, destination_folder):
@@ -42,14 +43,16 @@ def mirror_copy_remote(source_folder, destination_folder):
         )
 
     # Build the rsync command to run on the remote machine
-    # rsync -av --delete source_folder/ destination_folder/
+    # rsync -av --delete --info=progress2 source_folder/ destination_folder/
     # -a: archive mode (preserves permissions, timestamps, etc.)
     # -v: verbose
     # --delete: delete files in destination that don't exist in source (mirror behavior)
+    # --info=progress2: show overall progress with speed and percentage
     rsync_cmd = [
         'rsync',
         '-av',
         '--delete',
+        '--info=progress2',
         f'{source_folder.rstrip("/")}/',
         f'{remote_destination.rstrip("/")}/'
     ]
@@ -59,17 +62,77 @@ def mirror_copy_remote(source_folder, destination_folder):
 
     print(f"Connecting to {ssh_connection}...")
     print(f"Running: rsync {' '.join(rsync_cmd)}")
+    print()
 
     try:
-        # Run the SSH command with rsync
-        result = subprocess.run(
+        # Run the SSH command with rsync and capture output for parsing
+        process = subprocess.Popen(
             ssh_cmd,
-            check=True,
-            capture_output=False,  # Show output in real-time
-            text=True
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,  # Line buffered
+            universal_newlines=True
         )
-        print("Mirror copy completed successfully.")
-        return result.returncode
+
+        # Parse rsync progress output
+        # Format: "    123,456,789  12%  123.45MB/s    0:00:12  (xfr#123, to-chk=456/789)"
+        # The pattern matches: bytes, percentage, speed, time remaining, file counts
+        progress_pattern = re.compile(
+            r'\s+(\d+(?:,\d+)*)\s+(\d+)%\s+([\d.]+)([KMGT]?B)/s\s+(\d+:\d+:\d+)\s+\(xfr#(\d+),\s+to-chk=(\d+)/(\d+)\)'
+        )
+
+        last_line = ""
+
+        while True:
+            output_line = process.stdout.readline()
+            if not output_line:
+                break
+
+            line = output_line.rstrip()
+
+            # Check if this is a progress line
+            match = progress_pattern.search(line)
+            if match:
+                percentage = match.group(2)
+                speed = match.group(3)
+                speed_unit = match.group(4)
+                time_remaining = match.group(5)
+                files_transferred = match.group(6)
+                total_files = match.group(8)
+
+                # Format the speed nicely
+                speed_display = f"{speed}{speed_unit}/s"
+
+                # Display progress with speed and percentage
+                # Clear the line and write new progress
+                sys.stdout.write(
+                    f'\rProgress: {percentage}% | Speed: {speed_display} | Files: {files_transferred}/{total_files} | ETA: {time_remaining}')
+                sys.stdout.flush()
+                last_line = line
+            else:
+                # For non-progress lines, print them normally
+                if line and not line.startswith('\r'):
+                    # Clear progress line first if we had one
+                    if last_line:
+                        sys.stdout.write('\r' + ' ' * 100 + '\r')
+                        sys.stdout.flush()
+                    print(line)
+                    last_line = ""
+
+        # Wait for process to complete
+        return_code = process.wait()
+
+        # Clear the progress line
+        sys.stdout.write('\r' + ' ' * 100 + '\r')
+        sys.stdout.flush()
+
+        if return_code == 0:
+            print("Mirror copy completed successfully.")
+        else:
+            raise subprocess.CalledProcessError(return_code, ssh_cmd)
+
+        return return_code
     except subprocess.CalledProcessError as e:
         raise RuntimeError(
             f"Failed to execute rsync on remote machine: {e}"

@@ -8,6 +8,6 @@
   },
   "mirror-copy-remote": {
     "source": "/mnt/z/ComfyUI/models",
-    "destination": "adriano@frozen:/mnt/c/Users/adriano/Desktop/models"
+    "destination": "adriano@192.168.1.64:/mnt/c/Users/adriano/Desktop/models"
   }
 }
