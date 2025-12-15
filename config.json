@@ -1,7 +1,7 @@
 {
   "mirror-copy": {
-    "source": "from/folder",
-    "destination": "to/folder"
+    "source": "Z:\\ComfyUI\\models",
+    "destination": "C:\\Users\\adriano\\Desktop\\models"
   },
   "download": {
     "model_folder": "/Volumes/shared/ComfyUI/models"
