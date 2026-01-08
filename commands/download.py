@@ -14,7 +14,8 @@ ALLOWED_FOLDERS = ['diffusion_models',
                    'upscale_models',
                    'audio_encoders',
                    'unet',
-                   'model_patches']
+                   'model_patches',
+                   'latent_upscale_models']
 
 
 def download_file(url: str,

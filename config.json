@@ -8,6 +8,14 @@
   },
   "mirror-copy-remote": {
     "source": "/mnt/z/ComfyUI/models",
-    "destination": "adriano@192.168.1.64:/mnt/c/Users/adriano/Desktop/models"
+    "destination": "adriano@frozen.wsl:/mnt/c/Users/adriano/Desktop/models"
+  },
+  "restore-settings": {
+    "comfyui_folder": "C:\\Users\\adriano\\Desktop\\ComfyUI_windows_portable",
+    "model_folder": "/Volumes/shared/ComfyUI/models",
+    "output_directory": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\outputs",
+    "repositories": [
+      "https://github.com/comfyui/comfyui-custom-nodes.git"
+    ]
   }
 }

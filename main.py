@@ -4,6 +4,7 @@ import argparse
 from commands.mirror_copy import mirror_copy
 from commands.mirror_copy_remote import mirror_copy_remote
 from commands.download import download_file
+from commands.restore_settings import run as restore_settings
 from config import load_config
 
 
@@ -52,8 +53,12 @@ def build_parser() -> argparse.ArgumentParser:
                              help="Source folder to mirror")
     p_cp_remote.add_argument("destination",
                              nargs='?',
-                             default=mirror_copy_remote_config.get("destination"),
+                             default=mirror_copy_remote_config.get(
+                                 "destination"),
                              help="Destination folder (local or remote in format user@host:/path)")
+
+    sub.add_parser("restore-settings",
+                   help="Restore ComfyUI settings")
 
     return parser
 
@@ -84,6 +89,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "mirror-copy-remote":
         try:
             mirror_copy_remote(args.source, args.destination)
+            return 0
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
+    if args.command == "restore-settings":
+        try:
+            restore_settings()
+            print("Settings restored successfully.")
             return 0
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
