@@ -15,7 +15,9 @@
     "model_folder": "/Volumes/shared/ComfyUI/models",
     "output_directory": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\outputs",
     "repositories": [
-      "https://github.com/comfyui/comfyui-custom-nodes.git"
+      "https://github.com/Comfy-Org/ComfyUI-Manager.git",
+      "https://github.com/Lightricks/ComfyUI-LTXVideo.git",
+      "https://github.com/crystian/ComfyUI-Crystools.git"
     ]
   }
 }

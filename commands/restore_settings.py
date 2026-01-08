@@ -76,8 +76,7 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
     )
 
     # Checkout main branch and pull (run in the cloned directory)
-    subprocess.run(["git", "checkout", "main"],
-                   cwd=custom_nodes_path, check=True)
+    subprocess.run(["git", "checkout", "main"], cwd=custom_nodes_path, check=True)
     subprocess.run(["git", "pull"], cwd=custom_nodes_path, check=True)
 
 
