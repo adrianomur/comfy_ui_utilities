@@ -84,10 +84,7 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
         git_dir = os.path.join(repo_path, ".git")
         if os.path.exists(git_dir):
             # It's already a git repo, pull instead of clone
-            print(
-                f"Repository {repo_name} already exists, pulling latest changes...")
-            subprocess.run(["git", "checkout", "main"],
-                           cwd=repo_path, check=False)
+            print(f"Repository {repo_name} already exists, pulling latest changes...")
             subprocess.run(["git", "pull"], cwd=repo_path, check=True)
         else:
             # Directory exists but is not a git repo - raise an error
@@ -103,7 +100,6 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
         )
 
         # Checkout main branch and pull (run in the cloned directory)
-        subprocess.run(["git", "checkout", "main"], cwd=repo_path, check=True)
         subprocess.run(["git", "pull"], cwd=repo_path, check=True)
 
 
