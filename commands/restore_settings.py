@@ -81,10 +81,11 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
         f.write(bat_content)
 
 
-def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
+def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str, python_path: str) -> None:
     """
     Clone the custom node repo into a subdirectory within custom_nodes_path.
     If the directory already exists and is a git repo, pull instead of clone.
+    Install requirements.txt if it exists using the specified Python pip.
     """
     # Extract repo name from URL (e.g., "ComfyUI-Manager" from "https://github.com/Comfy-Org/ComfyUI-Manager.git")
     repo_name = os.path.basename(repo_url).replace(".git", "")
@@ -118,6 +119,18 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
         # Checkout main branch and pull (run in the cloned directory)
         subprocess.run(["git", "pull"], cwd=repo_path, check=True)
 
+    # Install requirements if requirements.txt exists
+    requirements_file = os.path.join(repo_path, "requirements.txt")
+    if os.path.exists(requirements_file):
+        print(f"Installing requirements for {repo_name}...")
+        pip_command = [python_path, "-m", "pip",
+                       "install", "-r", requirements_file]
+        subprocess.run(pip_command, check=True)
+        print(f"Requirements installed for {repo_name}")
+    else:
+        print(
+            f"No requirements.txt found for {repo_name}, skipping installation")
+
 
 def restore_settings(config: dict[str, Any]) -> None:
     """
@@ -139,8 +152,14 @@ def restore_settings(config: dict[str, Any]) -> None:
     # Clone repos in custon nodes folder
     repositories = config.get("repositories", [])
     custom_nodes_path = os.path.join(comfyui_folder, "ComfyUI", "custom_nodes")
+    python_path = os.path.join(comfyui_folder, "python_embeded", "python.exe")
+    if not os.path.exists(python_path):
+        raise FileNotFoundError(
+            f"Python executable not found at: {python_path}. "
+            f"Please ensure the embedded Python is installed."
+        )
     for repo_url in repositories:
-        clone_custom_nodes_repo(custom_nodes_path, repo_url)
+        clone_custom_nodes_repo(custom_nodes_path, repo_url, python_path)
 
     # Create model symlink
     source_models_path = config.get("model_folder")
