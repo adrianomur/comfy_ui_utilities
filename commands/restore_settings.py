@@ -60,7 +60,7 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
 
     if os.path.exists(nvidia_gpu_path):
         os.remove(nvidia_gpu_path)
-        
+
     # Write the BAT file
     with open(nvidia_gpu_path, "w", encoding="utf-8") as f:
         f.write(bat_content)
@@ -68,16 +68,43 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
 
 def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
     """
-    Clone the custom node repo.
+    Clone the custom node repo into a subdirectory within custom_nodes_path.
+    If the directory already exists and is a git repo, pull instead of clone.
     """
-    subprocess.run(
-        ["git", "clone", repo_url, custom_nodes_path],
-        check=True
-    )
+    # Extract repo name from URL (e.g., "ComfyUI-Manager" from "https://github.com/Comfy-Org/ComfyUI-Manager.git")
+    repo_name = os.path.basename(repo_url).replace(".git", "")
+    repo_path = os.path.join(custom_nodes_path, repo_name)
 
-    # Checkout main branch and pull (run in the cloned directory)
-    subprocess.run(["git", "checkout", "main"], cwd=custom_nodes_path, check=True)
-    subprocess.run(["git", "pull"], cwd=custom_nodes_path, check=True)
+    # Ensure custom_nodes directory exists
+    os.makedirs(custom_nodes_path, exist_ok=True)
+
+    # Check if the repo directory already exists
+    if os.path.exists(repo_path):
+        # Check if it's a git repository
+        git_dir = os.path.join(repo_path, ".git")
+        if os.path.exists(git_dir):
+            # It's already a git repo, pull instead of clone
+            print(
+                f"Repository {repo_name} already exists, pulling latest changes...")
+            subprocess.run(["git", "checkout", "main"],
+                           cwd=repo_path, check=False)
+            subprocess.run(["git", "pull"], cwd=repo_path, check=True)
+        else:
+            # Directory exists but is not a git repo - raise an error
+            raise ValueError(
+                f"Directory {repo_path} already exists but is not a git repository. "
+                f"Please remove it manually or choose a different location."
+            )
+    else:
+        # Clone the repository
+        subprocess.run(
+            ["git", "clone", repo_url, repo_path],
+            check=True
+        )
+
+        # Checkout main branch and pull (run in the cloned directory)
+        subprocess.run(["git", "checkout", "main"], cwd=repo_path, check=True)
+        subprocess.run(["git", "pull"], cwd=repo_path, check=True)
 
 
 def restore_settings(config: dict[str, Any]) -> None:
@@ -86,9 +113,11 @@ def restore_settings(config: dict[str, Any]) -> None:
     """
     comfyui_folder = config.get("comfyui_folder")
     if not os.path.exists(comfyui_folder):
-        raise FileNotFoundError(f"ComfyUI folder does not exist: {comfyui_folder}")
+        raise FileNotFoundError(
+            f"ComfyUI folder does not exist: {comfyui_folder}")
     if not os.path.isdir(comfyui_folder):
-        raise ValueError(f"ComfyUI folder must be a directory: {comfyui_folder}")
+        raise ValueError(
+            f"ComfyUI folder must be a directory: {comfyui_folder}")
 
     # Create a custom run_nvidia_gpu.bat file
     bat_file_path = os.path.join(comfyui_folder, "run_nvidia_gpu_custom.bat")
