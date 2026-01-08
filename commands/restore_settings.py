@@ -49,23 +49,18 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
     """
     Create a BAT file to run ComfyUI with NVIDIA GPU settings.
     """
-    if not os.path.exists(nvidia_gpu_path):
-        raise FileNotFoundError(
-            f"NVIDIA GPU path does not exist: {nvidia_gpu_path}")
-    if not os.path.isdir(nvidia_gpu_path):
-        raise ValueError(
-            f"NVIDIA GPU path must be a directory: {nvidia_gpu_path}")
+    folder = os.path.dirname(nvidia_gpu_path)
+    if not os.path.exists(folder):
+        raise FileNotFoundError(f"Folder does not exist: {folder}")
 
     bat_content = (
         f".\\python_embeded\\python.exe -s ComfyUI\\main.py --windows-standalone-build --listen --output-directory {output_directory}\n"
         "pause\n"
     )
 
-    # Ensure the directory exists
-    directory = os.path.dirname(nvidia_gpu_path)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
-
+    if os.path.exists(nvidia_gpu_path):
+        os.remove(nvidia_gpu_path)
+        
     # Write the BAT file
     with open(nvidia_gpu_path, "w", encoding="utf-8") as f:
         f.write(bat_content)
