@@ -132,6 +132,23 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str, python_path: 
             f"No requirements.txt found for {repo_name}, skipping installation")
 
 
+def install_requirements(repo_path: str, python_path: str) -> None:
+    """
+    Install requirements.txt if it exists using the specified Python pip.
+    """
+    repo_name = os.path.basename(repo_path)
+    requirements_file = os.path.join(repo_path, "requirements.txt")
+    if os.path.exists(requirements_file):
+        print(f"Installing requirements for {repo_name}...")
+        pip_command = [python_path, "-m", "pip",
+                       "install", "-r", requirements_file]
+        subprocess.run(pip_command, check=True)
+        print(f"Requirements installed for {repo_name}")
+    else:
+        print(
+            f"No requirements.txt found for {repo_name}, skipping installation")
+
+
 def restore_settings(config: dict[str, Any]) -> None:
     """
     Restore the settings.json file to the confyui_path.
@@ -165,6 +182,12 @@ def restore_settings(config: dict[str, Any]) -> None:
     source_models_path = config.get("model_folder")
     destination_models_path = os.path.join(comfyui_folder, "ComfyUI", "models")
     create_symlink(source_models_path, destination_models_path)
+
+    # install requirements
+    custom_nodes_path = os.path.join(comfyui_folder, "ComfyUI", "custom_nodes")
+    for repo_name in os.listdir(custom_nodes_path):
+        repo_path = os.path.join(custom_nodes_path, repo_name)
+        install_requirements(repo_path, python_path)
 
 
 def run() -> None:
