@@ -31,15 +31,30 @@ def create_symlink(source_path: str, target_path: str) -> None:
     # On Windows, symlinks require special handling for directories
     if platform.system() == "Windows":
         try:
+            # Try with target_is_dir parameter (Python 3.8+)
             os.symlink(source_path, target_path, target_is_dir=True)
+        except TypeError:
+            # Fallback if target_is_dir is not supported - use mklink command
+            subprocess.run(
+                ["cmd", "/c", "mklink", "/D", target_path, source_path],
+                check=True,
+                shell=True
+            )
         except OSError as e:
-            if e.winerror == 1314:  # ERROR_PRIVILEGE_NOT_HELD
+            if hasattr(e, 'winerror') and e.winerror == 1314:  # ERROR_PRIVILEGE_NOT_HELD
                 raise OSError(
                     "Symlink creation failed. On Windows, you need either:\n"
                     "1. Administrator privileges, or\n"
                     "2. Developer Mode enabled (Settings > Update & Security > For developers)"
                 ) from e
             raise
+        except subprocess.CalledProcessError as e:
+            # If mklink fails, provide helpful error message
+            raise OSError(
+                "Symlink creation failed. On Windows, you need either:\n"
+                "1. Administrator privileges, or\n"
+                "2. Developer Mode enabled (Settings > Update & Security > For developers)"
+            ) from e
     else:
         # Linux and macOS
         os.symlink(source_path, target_path)
@@ -84,7 +99,8 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str) -> None:
         git_dir = os.path.join(repo_path, ".git")
         if os.path.exists(git_dir):
             # It's already a git repo, pull instead of clone
-            print(f"Repository {repo_name} already exists, pulling latest changes...")
+            print(
+                f"Repository {repo_name} already exists, pulling latest changes...")
             subprocess.run(["git", "pull"], cwd=repo_path, check=True)
         else:
             # Directory exists but is not a git repo - raise an error
