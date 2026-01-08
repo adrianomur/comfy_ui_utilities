@@ -12,7 +12,7 @@
   },
   "restore-settings": {
     "comfyui_folder": "C:\\Users\\adriano\\Desktop\\ComfyUI_windows_portable",
-    "model_folder": "/Volumes/shared/ComfyUI/models",
+    "model_folder": "C:\\Users\\adriano\\Desktop\\models",
     "output_directory": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\outputs",
     "repositories": [
       "https://github.com/Comfy-Org/ComfyUI-Manager.git",
