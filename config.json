@@ -17,7 +17,8 @@
     "repositories": [
       "https://github.com/Comfy-Org/ComfyUI-Manager.git",
       "https://github.com/Lightricks/ComfyUI-LTXVideo.git",
-      "https://github.com/crystian/ComfyUI-Crystools.git"
+      "https://github.com/crystian/ComfyUI-Crystools.git",
+      "https://github.com/jtydhr88/ComfyUI-qwenmultiangle.git"
     ]
   }
 }
