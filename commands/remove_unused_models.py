@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime, timedelta
 
 
@@ -39,7 +40,18 @@ def get_paths_older_than(folder: str, days: int) -> list[tuple[str, datetime]]:
     return [path for path, date in files_with_dates if date < datetime.now() - timedelta(days=days)]
 
 
+def write_list_in_json(removed_models: list[str], folder: str):
+    filename = os.path.join(folder, "removed_models.json")
+    with open(filename, "w") as f:
+        json.dump(removed_models, f)
+
+
 def remove_unused_models(folder: str, days: int = 15):
     paths = get_paths_older_than(folder, days)
+    removed_models = []
     for path in paths:
-        print(path)
+        # os.remove(path)
+        removed_models.append(path)
+    write_list_in_json(removed_models, folder)
+    return removed_models
+
