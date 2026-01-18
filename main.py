@@ -5,6 +5,7 @@ from commands.mirror_copy import mirror_copy
 from commands.mirror_copy_remote import mirror_copy_remote
 from commands.download import download_file
 from commands.restore_settings import run as restore_settings
+from commands.remove_unused_models import remove_unused_models
 from config import load_config
 
 
@@ -59,6 +60,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("restore-settings",
                    help="Restore ComfyUI settings")
+    p_remove = sub.add_parser("remove-unused",
+                              help="Remove unused models based on last access time")
+    p_remove.add_argument("--days",
+                          type=int,
+                          default=15,
+                          help="Minimum number of days since last access")
 
     return parser
 
@@ -98,6 +105,14 @@ def main(argv: list[str] | None = None) -> int:
         try:
             restore_settings()
             print("Settings restored successfully.")
+            return 0
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
+    if args.command == "remove-unused":
+        try:
+            remove_unused_models(args.days)
             return 0
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
