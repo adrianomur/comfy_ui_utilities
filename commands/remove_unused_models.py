@@ -50,7 +50,7 @@ def remove_unused_models(folder: str, days: int = 15):
     paths = get_paths_older_than(folder, days)
     removed_models = []
     for path in paths:
-        # os.remove(path)
+        os.remove(path)
         removed_models.append(path)
     write_list_in_json(removed_models, folder)
     return removed_models
