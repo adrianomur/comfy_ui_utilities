@@ -62,6 +62,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Restore ComfyUI settings")
     p_remove = sub.add_parser("remove-unused",
                               help="Remove unused models based on last access time")
+    p_remove.add_argument("--folder",
+                          default=r"C:/Users/adriano/Desktop/models",
+                          help="Folder to scan for unused models")
     p_remove.add_argument("--days",
                           type=int,
                           default=15,
@@ -112,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "remove-unused":
         try:
-            remove_unused_models(args.days)
+            remove_unused_models(args.folder, args.days)
             return 0
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)

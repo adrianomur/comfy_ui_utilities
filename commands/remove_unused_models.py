@@ -39,7 +39,7 @@ def get_paths_older_than(folder: str, days: int) -> list[tuple[str, datetime]]:
     return [path for path, date in files_with_dates if date < datetime.now() - timedelta(days=days)]
 
 
-def remove_unused_models(days: int = 15):
-    paths = get_paths_older_than(r"/Volumes/shared/ComfyUI", days)
+def remove_unused_models(folder: str, days: int = 15):
+    paths = get_paths_older_than(folder, days)
     for path in paths:
         print(path)
