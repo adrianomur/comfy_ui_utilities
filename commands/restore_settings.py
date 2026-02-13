@@ -5,8 +5,38 @@ import platform
 from typing import Any
 from config import load_config
 
+# Project root (parent of commands/) for resolving comfy_ui.ico
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_COMFY_UI_ICO = "comfy_ui.ico"
 
-def create_symlink(source_path: str, target_path: str) -> None:
+
+def set_windows_folder_icon(folder_path: str, icon_path: str) -> None:
+    """
+    Set a custom icon for a folder on Windows using desktop.ini.
+    Copies the icon into the folder and writes desktop.ini so Explorer displays it.
+    """
+    if platform.system() != "Windows" or not os.path.isfile(icon_path):
+        return
+    icon_name = os.path.basename(icon_path)
+    dest_icon = os.path.join(folder_path, icon_name)
+    if not os.path.exists(dest_icon) or not os.path.samefile(icon_path, dest_icon):
+        shutil.copy2(icon_path, dest_icon)
+    desktop_ini = os.path.join(folder_path, "desktop.ini")
+    ini_content = (
+        "[.ShellClassInfo]\r\n"
+        f"IconResource={icon_name},0\r\n"
+    )
+    with open(desktop_ini, "w", encoding="utf-16") as f:
+        f.write(ini_content)
+    # Mark folder as read-only so Windows applies the custom icon (folder "read-only" = customized)
+    subprocess.run(
+        ["attrib", "+r", folder_path],
+        check=True,
+        capture_output=True,
+    )
+
+
+def create_symlink(source_path: str, target_path: str) -> str:
     """
     Create a directory symlink from source_path to target_path.
     Works on Windows (requires admin or Developer Mode), Linux, and macOS.
@@ -28,8 +58,10 @@ def create_symlink(source_path: str, target_path: str) -> None:
             f"Target path already exists and is not a directory or symlink: {target_path}"
         )
 
-    # On Windows, symlinks require special handling for directories
+    # On Windows, set folder icon for source_path so Explorer displays it, then create symlink
     if platform.system() == "Windows":
+        icon_path = os.path.join(_PROJECT_ROOT, _COMFY_UI_ICO)
+        set_windows_folder_icon(source_path, icon_path)
         try:
             # Try with target_is_dir parameter (Python 3.8+)
             os.symlink(source_path, target_path, target_is_dir=True)
@@ -58,6 +90,8 @@ def create_symlink(source_path: str, target_path: str) -> None:
     else:
         # Linux and macOS
         os.symlink(source_path, target_path)
+
+    return target_path
 
 
 def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) -> None:
@@ -181,13 +215,14 @@ def restore_settings(config: dict[str, Any]) -> None:
     # Create model symlink
     source_models_path = config.get("model_folder")
     destination_models_path = os.path.join(comfyui_folder, "ComfyUI", "models")
-    create_symlink(source_models_path, destination_models_path)
+    symlink_path = create_symlink(source_models_path, destination_models_path)
 
     # install requirements
     custom_nodes_path = os.path.join(comfyui_folder, "ComfyUI", "custom_nodes")
     for repo_name in os.listdir(custom_nodes_path):
         repo_path = os.path.join(custom_nodes_path, repo_name)
         install_requirements(repo_path, python_path)
+
 
 
 def run() -> None:
