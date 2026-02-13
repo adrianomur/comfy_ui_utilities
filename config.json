@@ -14,6 +14,7 @@
     "comfyui_folder": "C:\\Users\\adriano\\Desktop\\ComfyUI_windows_portable",
     "model_folder": "C:\\Users\\adriano\\Desktop\\models",
     "output_directory": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\outputs",
+    "shortcut_path": "C:\\Users\\adriano\\Desktop\\ComfyUI",
     "repositories": [
       "https://github.com/Comfy-Org/ComfyUI-Manager.git",
       "https://github.com/Lightricks/ComfyUI-LTXVideo.git",

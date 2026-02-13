@@ -60,8 +60,6 @@ def create_symlink(source_path: str, target_path: str) -> str:
 
     # On Windows, set folder icon for source_path so Explorer displays it, then create symlink
     if platform.system() == "Windows":
-        icon_path = os.path.join(_PROJECT_ROOT, _COMFY_UI_ICO)
-        set_windows_folder_icon(source_path, icon_path)
         try:
             # Try with target_is_dir parameter (Python 3.8+)
             os.symlink(source_path, target_path, target_is_dir=True)
@@ -94,7 +92,7 @@ def create_symlink(source_path: str, target_path: str) -> str:
     return target_path
 
 
-def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) -> None:
+def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) -> str:
     """
     Create a BAT file to run ComfyUI with NVIDIA GPU settings.
     """
@@ -113,6 +111,11 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
     # Write the BAT file
     with open(nvidia_gpu_path, "w", encoding="utf-8") as f:
         f.write(bat_content)
+
+    icon_path = os.path.join(_PROJECT_ROOT, _COMFY_UI_ICO)
+    set_windows_folder_icon(nvidia_gpu_path, icon_path)
+
+    return nvidia_gpu_path
 
 
 def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str, python_path: str) -> None:
@@ -198,7 +201,10 @@ def restore_settings(config: dict[str, Any]) -> None:
     # Create a custom run_nvidia_gpu.bat file
     bat_file_path = os.path.join(comfyui_folder, "run_nvidia_gpu_custom.bat")
     custom_output_directory = config.get("output_directory")
-    create_run_nvidia_gpu_bat_file(bat_file_path, custom_output_directory)
+    nvidia_gpu_path = create_run_nvidia_gpu_bat_file(bat_file_path, custom_output_directory)
+    shortcut_path = config.get("shortcut_path")
+    create_symlink(source_path=nvidia_gpu_path, target_path=shortcut_path)
+
 
     # Clone repos in custon nodes folder
     repositories = config.get("repositories", [])
