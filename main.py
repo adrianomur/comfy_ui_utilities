@@ -1,5 +1,5 @@
 import sys
-import argparse
+import click
 
 from commands.mirror_copy import mirror_copy
 from commands.mirror_copy_remote import mirror_copy_remote
@@ -9,120 +9,121 @@ from commands.remove_unused_models import remove_unused_models
 from config import load_config
 
 
-def build_parser() -> argparse.ArgumentParser:
+def _get_config():
+    return load_config()
 
-    config = load_config()
 
-    parser = argparse.ArgumentParser(prog="comfyui-model-downloader",
-                                     description="Download models files to a specific folder.")
-    sub = parser.add_subparsers(dest="command",
-                                required=True)
+@click.group(
+    name="comfyui-model-downloader",
+    invoke_without_command=True,
+    no_args_is_help=True,
+)
+@click.pass_context
+def cli(ctx: click.Context) -> None:
+    """Download model files to a specific folder and other ComfyUI utilities."""
+    ctx.ensure_object(dict)
+    ctx.obj["config"] = _get_config()
 
+
+@cli.command("download", help="Download a file to a folder")
+@click.option(
+    "--urls",
+    required=True,
+    multiple=True,
+    help="URLs of the files to download (can be passed multiple times).",
+)
+@click.option(
+    "--model-folder",
+    default=None,
+    help="The folder of the model or component.",
+)
+@click.option(
+    "--folder",
+    default=None,
+    help="Override folder within model-folder (optional).",
+)
+@click.pass_context
+def cmd_download(
+    ctx: click.Context,
+    urls: tuple[str, ...],
+    model_folder: str | None,
+    folder: str | None,
+) -> None:
+    config = ctx.obj["config"]
     download_config = config.get("download", {})
-    p_dl = sub.add_parser("download",
-                          help="Download a file to a folder")
-    p_dl.add_argument("--urls",
-                      nargs='+',
-                      required=True,
-                      help="URLs of the files to download")
-    p_dl.add_argument("--model-folder",
-                      default=download_config.get("model_folder"),
-                      help="the folder of the model or component")
-    p_dl.add_argument("--folder",
-                      nargs='?',
-                      default=None,
-                      help="the folder of the model or component")
+    model_folder = model_folder or download_config.get("remote_models_folder")
+    try:
+        for url in urls:
+            path = download_file(url, model_folder, folder)
+            click.echo(f"Saved {url} to: {path}")
+    except RuntimeError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
 
+
+@cli.command("mirror-copy", help="Mirror-copy models from source to destination with progress")
+@click.argument("source", required=False, default=None)
+@click.argument("destination", required=False, default=None)
+@click.pass_context
+def cmd_mirror_copy(
+    ctx: click.Context,
+    source: str | None,
+    destination: str | None,
+) -> None:
+    config = ctx.obj["config"]
     mirror_copy_config = config.get("mirror-copy", {})
-    p_cp = sub.add_parser("mirror-copy",
-                          help="Mirror-copy models from source to destination with progress")
-    p_cp.add_argument("source",
-                      nargs='?',
-                      default=mirror_copy_config.get("source"),
-                      help="Source folder to mirror")
-    p_cp.add_argument("destination",
-                      nargs='?',
-                      default=mirror_copy_config.get("destination"),
-                      help="Destination folder to mirror into")
+    general_config = config.get("general", {})
+    source = source or mirror_copy_config.get("source")
+    destination = destination or general_config.get("models_folder")
+    try:
+        mirror_copy(source, destination)
+        click.echo("Mirror copy completed.")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
 
-    mirror_copy_remote_config = config.get("mirror-copy-remote", {})
-    p_cp_remote = sub.add_parser("mirror-copy-remote",
-                                 help="Mirror-copy models from source to remote destination using rsync")
-    p_cp_remote.add_argument("source",
-                             nargs='?',
-                             default=mirror_copy_remote_config.get("source"),
-                             help="Source folder to mirror")
-    p_cp_remote.add_argument("destination",
-                             nargs='?',
-                             default=mirror_copy_remote_config.get(
-                                 "destination"),
-                             help="Destination folder (local or remote in format user@host:/path)")
 
-    sub.add_parser("restore-settings",
-                   help="Restore ComfyUI settings")
-    p_remove = sub.add_parser("remove-unused",
-                              help="Remove unused models based on last access time")
-    p_remove.add_argument("--folder",
-                          default=r"C:/Users/adriano/Desktop/models",
-                          help="Folder to scan for unused models")
-    p_remove.add_argument("--days",
-                          type=int,
-                          default=15,
-                          help="Minimum number of days since last access")
+@cli.command("restore-settings", help="Restore ComfyUI settings")
+@click.pass_context
+def cmd_restore_settings(ctx: click.Context) -> None:
+    config = ctx.obj["config"]
+    try:
+        restore_settings(config=config)
+        click.echo("Settings restored successfully.")
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
 
-    return parser
+
+@cli.command("remove-unused", help="Remove unused models based on last access time")
+@click.option(
+    "--folder",
+    default=r"C:/Users/adriano/Desktop/models",
+    help="Folder to scan for unused models.",
+)
+@click.option(
+    "--days",
+    type=int,
+    default=15,
+    help="Minimum number of days since last access.",
+)
+def cmd_remove_unused(folder: str, days: int) -> None:
+    try:
+        remove_unused_models(folder, days)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
-
-    if args.command == "download":
-        try:
-            for url in args.urls:
-                path = download_file(url, args.model_folder, args.folder)
-                print(f"Saved {url} to: {path}")
-            return 0
-        except RuntimeError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-    if args.command == "mirror-copy":
-        try:
-            mirror_copy(args.source, args.destination)
-            print("Mirror copy completed.")
-            return 0
-        except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-    if args.command == "mirror-copy-remote":
-        try:
-            mirror_copy_remote(args.source, args.destination)
-            return 0
-        except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-    if args.command == "restore-settings":
-        try:
-            restore_settings()
-            print("Settings restored successfully.")
-            return 0
-        except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-    if args.command == "remove-unused":
-        try:
-            remove_unused_models(args.folder, args.days)
-            return 0
-        except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-    parser.print_help()
-    return 2
+    try:
+        exit_code = cli.main(args=argv, standalone_mode=False)
+        return exit_code if exit_code is not None else 0
+    except click.ClickException:
+        raise
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        return 1
 
 
 if __name__ == "__main__":

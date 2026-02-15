@@ -1,20 +1,17 @@
 {
+  "general": {
+    "comfyui_folder": "C:\\Users\\adriano\\Desktop\\ComfyUI_windows_portable",
+    "models_folder": "C:\\Users\\adriano\\Desktop\\models",
+    "outputs_directory": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\outputs"
+  },
   "mirror-copy": {
-    "source": "Z:\\ComfyUI\\models",
-    "destination": "C:\\Users\\adriano\\Desktop\\models"
+    "source": "Z:\\ComfyUI\\models"
   },
   "download": {
-    "model_folder": "/Volumes/shared/ComfyUI/models"
-  },
-  "mirror-copy-remote": {
-    "source": "/mnt/z/ComfyUI/models",
-    "destination": "adriano@frozen.wsl:/mnt/c/Users/adriano/Desktop/models"
+    "remote_models_folder": "/Volumes/shared/ComfyUI/models"
   },
   "restore-settings": {
-    "comfyui_folder": "C:\\Users\\adriano\\Desktop\\ComfyUI_windows_portable",
-    "model_folder": "C:\\Users\\adriano\\Desktop\\models",
-    "output_directory": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\outputs",
-    "shortcut_path": "C:\\Users\\adriano\\Desktop\\ComfyUI",
+    "shortcut_path": "C:\\Users\\adriano\\Desktop",
     "repositories": [
       "https://github.com/Comfy-Org/ComfyUI-Manager.git",
       "https://github.com/Lightricks/ComfyUI-LTXVideo.git",

@@ -190,26 +190,32 @@ def restore_settings(config: dict[str, Any]) -> None:
     """
     Restore the settings.json file to the confyui_path.
     """
-    comfyui_folder = config.get("comfyui_folder")
-    if not os.path.exists(comfyui_folder):
+    config_general = config.get("general")
+    comfy_ui_folder = config_general.get("comfyui_folder")
+    if not os.path.exists(comfy_ui_folder):
         raise FileNotFoundError(
-            f"ComfyUI folder does not exist: {comfyui_folder}")
-    if not os.path.isdir(comfyui_folder):
+            f"ComfyUI folder does not exist: {comfy_ui_folder}")
+    if not os.path.isdir(comfy_ui_folder):
         raise ValueError(
-            f"ComfyUI folder must be a directory: {comfyui_folder}")
+            f"ComfyUI folder must be a directory: {comfy_ui_folder}")
 
     # Create a custom run_nvidia_gpu.bat file
-    bat_file_path = os.path.join(comfyui_folder, "run_nvidia_gpu_custom.bat")
-    custom_output_directory = config.get("output_directory")
-    nvidia_gpu_path = create_run_nvidia_gpu_bat_file(bat_file_path, custom_output_directory)
-    shortcut_path = config.get("shortcut_path")
-    create_symlink(source_path=nvidia_gpu_path, target_path=shortcut_path)
+    nvidia_gpu_path = os.path.join(comfy_ui_folder, "run_nvidia_gpu_custom.bat")
+    custom_output_directory = config_general.get("outputs_directory")
+    nvidia_gpu_path = create_run_nvidia_gpu_bat_file(nvidia_gpu_path, custom_output_directory)
 
+    # Set shortcut to the run_nvidia_gpu_custom.bat file
+    restore_settings_config = config.get("restore-settings", {})
+    shortcut_path = restore_settings_config.get("shortcut_path", {})
+    if shortcut_path is None:
+        print("Shortcut path is not set in the restore-settings section of the config.json file, skipping shortcut creation")
+    else:
+        create_symlink(source_path=nvidia_gpu_path, target_path=shortcut_path)
 
     # Clone repos in custon nodes folder
-    repositories = config.get("repositories", [])
-    custom_nodes_path = os.path.join(comfyui_folder, "ComfyUI", "custom_nodes")
-    python_path = os.path.join(comfyui_folder, "python_embeded", "python.exe")
+    repositories = restore_settings_config.get("repositories", [])
+    custom_nodes_path = os.path.join(comfy_ui_folder, "ComfyUI", "custom_nodes")
+    python_path = os.path.join(comfy_ui_folder, "python_embeded", "python.exe")
     if not os.path.exists(python_path):
         raise FileNotFoundError(
             f"Python executable not found at: {python_path}. "
@@ -220,21 +226,18 @@ def restore_settings(config: dict[str, Any]) -> None:
 
     # Create model symlink
     source_models_path = config.get("model_folder")
-    destination_models_path = os.path.join(comfyui_folder, "ComfyUI", "models")
+    destination_models_path = os.path.join(comfy_ui_folder, "ComfyUI", "models")
     symlink_path = create_symlink(source_models_path, destination_models_path)
 
     # install requirements
-    custom_nodes_path = os.path.join(comfyui_folder, "ComfyUI", "custom_nodes")
+    custom_nodes_path = os.path.join(comfy_ui_folder, "ComfyUI", "custom_nodes")
     for repo_name in os.listdir(custom_nodes_path):
         repo_path = os.path.join(custom_nodes_path, repo_name)
         install_requirements(repo_path, python_path)
-
 
 
 def run() -> None:
     """
     Run the restore_settings command.
     """
-    config = load_config()
-    restore_settings_config = config.get("restore-settings", {})
-    restore_settings(config=restore_settings_config)
+    restore_settings(config=load_config())
