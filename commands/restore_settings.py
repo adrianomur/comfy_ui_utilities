@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import platform
 from typing import Any
+import click
 from config import load_config
 
 # Project root (parent of commands/) for resolving comfy_ui.ico
@@ -10,27 +11,38 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _COMFY_UI_ICO = "comfy_ui.ico"
 
 
-def set_windows_folder_icon(folder_path: str, icon_path: str) -> None:
+def set_windows_file_icon(file_path: str, icon_path: str) -> None:
     """
-    Set a custom icon for a folder on Windows using desktop.ini.
-    Copies the icon into the folder and writes desktop.ini so Explorer displays it.
+    Set a custom icon for a file on Windows.
+    Set the icon_path on the file_path on Windows.
     """
-    if platform.system() != "Windows" or not os.path.isfile(icon_path):
+    if platform.system() != "Windows":
         return
-    icon_name = os.path.basename(icon_path)
-    dest_icon = os.path.join(folder_path, icon_name)
-    if not os.path.exists(dest_icon) or not os.path.samefile(icon_path, dest_icon):
-        shutil.copy2(icon_path, dest_icon)
-    desktop_ini = os.path.join(folder_path, "desktop.ini")
-    ini_content = (
+
+    for path in [file_path, icon_path]:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"File does not exist: {path}")
+        if not os.path.isfile(path):
+            raise ValueError(f"File must be a file: {path}")
+
+    # Set folder icon via desktop.ini so the folder containing file_path shows icon_path
+    folder = os.path.dirname(os.path.abspath(file_path))
+    desktop_ini_path = os.path.join(folder, "desktop.ini")
+    icon_abs = os.path.abspath(icon_path)
+    desktop_ini_content = (
         "[.ShellClassInfo]\r\n"
-        f"IconResource={icon_name},0\r\n"
+        f"IconResource={icon_abs},0\r\n"
+        "InfoTip=ComfyUI\r\n"
     )
-    with open(desktop_ini, "w", encoding="utf-16") as f:
-        f.write(ini_content)
-    # Mark folder as read-only so Windows applies the custom icon (folder "read-only" = customized)
+    with open(desktop_ini_path, "w", encoding="utf-8") as f:
+        f.write(desktop_ini_content)
     subprocess.run(
-        ["attrib", "+r", folder_path],
+        ["attrib", "+s", "+h", desktop_ini_path],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["attrib", "+r", folder],
         check=True,
         capture_output=True,
     )
@@ -43,8 +55,6 @@ def create_symlink(source_path: str, target_path: str) -> str:
     """
     if not os.path.exists(source_path):
         raise FileNotFoundError(f"Source path does not exist: {source_path}")
-    if not os.path.isdir(source_path):
-        raise ValueError(f"Source path must be a directory: {source_path}")
 
     # If target_path is already a symlink, remove it first
     if os.path.islink(target_path):
@@ -60,35 +70,9 @@ def create_symlink(source_path: str, target_path: str) -> str:
 
     # On Windows, set folder icon for source_path so Explorer displays it, then create symlink
     if platform.system() == "Windows":
-        try:
-            # Try with target_is_dir parameter (Python 3.8+)
-            os.symlink(source_path, target_path, target_is_dir=True)
-        except TypeError:
-            # Fallback if target_is_dir is not supported - use mklink command
-            subprocess.run(
-                ["cmd", "/c", "mklink", "/D", target_path, source_path],
-                check=True,
-                shell=True
-            )
-        except OSError as e:
-            if hasattr(e, 'winerror') and e.winerror == 1314:  # ERROR_PRIVILEGE_NOT_HELD
-                raise OSError(
-                    "Symlink creation failed. On Windows, you need either:\n"
-                    "1. Administrator privileges, or\n"
-                    "2. Developer Mode enabled (Settings > Update & Security > For developers)"
-                ) from e
-            raise
-        except subprocess.CalledProcessError as e:
-            # If mklink fails, provide helpful error message
-            raise OSError(
-                "Symlink creation failed. On Windows, you need either:\n"
-                "1. Administrator privileges, or\n"
-                "2. Developer Mode enabled (Settings > Update & Security > For developers)"
-            ) from e
-    else:
-        # Linux and macOS
         os.symlink(source_path, target_path)
-
+    
+    click.echo(f"Symlink created: source_path: {source_path} -> target_path: {target_path}")
     return target_path
 
 
@@ -101,6 +85,8 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
         raise FileNotFoundError(f"Folder does not exist: {folder}")
 
     bat_content = (
+        "@echo off\n"
+        'cd /d "%~dp0"\n'
         f".\\python_embeded\\python.exe -s ComfyUI\\main.py --windows-standalone-build --listen --output-directory {output_directory}\n"
         "pause\n"
     )
@@ -112,8 +98,9 @@ def create_run_nvidia_gpu_bat_file(nvidia_gpu_path: str, output_directory: str) 
     with open(nvidia_gpu_path, "w", encoding="utf-8") as f:
         f.write(bat_content)
 
-    icon_path = os.path.join(_PROJECT_ROOT, _COMFY_UI_ICO)
-    set_windows_folder_icon(nvidia_gpu_path, icon_path)
+    # icon_path = os.path.join(_PROJECT_ROOT, _COMFY_UI_ICO)
+    # print(f"Setting Windows folder icon for {nvidia_gpu_path} with icon {icon_path}")
+    # set_windows_file_icon(nvidia_gpu_path, icon_path)
 
     return nvidia_gpu_path
 
@@ -137,7 +124,7 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str, python_path: 
         git_dir = os.path.join(repo_path, ".git")
         if os.path.exists(git_dir):
             # It's already a git repo, pull instead of clone
-            print(
+            click.echo(
                 f"Repository {repo_name} already exists, pulling latest changes...")
             subprocess.run(["git", "pull"], cwd=repo_path, check=True)
         else:
@@ -159,13 +146,13 @@ def clone_custom_nodes_repo(custom_nodes_path: str, repo_url: str, python_path: 
     # Install requirements if requirements.txt exists
     requirements_file = os.path.join(repo_path, "requirements.txt")
     if os.path.exists(requirements_file):
-        print(f"Installing requirements for {repo_name}...")
+        click.echo(f"Installing requirements for {repo_name}...")
         pip_command = [python_path, "-m", "pip",
                        "install", "-r", requirements_file]
         subprocess.run(pip_command, check=True)
-        print(f"Requirements installed for {repo_name}")
+        click.echo(f"Requirements installed for {repo_name}")
     else:
-        print(
+        click.echo(
             f"No requirements.txt found for {repo_name}, skipping installation")
 
 
@@ -176,13 +163,13 @@ def install_requirements(repo_path: str, python_path: str) -> None:
     repo_name = os.path.basename(repo_path)
     requirements_file = os.path.join(repo_path, "requirements.txt")
     if os.path.exists(requirements_file):
-        print(f"Installing requirements for {repo_name}...")
+        click.echo(f"Installing requirements for {repo_name}...")
         pip_command = [python_path, "-m", "pip",
                        "install", "-r", requirements_file]
         subprocess.run(pip_command, check=True)
-        print(f"Requirements installed for {repo_name}")
+        click.echo(f"Requirements installed for {repo_name}")
     else:
-        print(
+        click.echo(
             f"No requirements.txt found for {repo_name}, skipping installation")
 
 
@@ -199,19 +186,19 @@ def restore_settings(config: dict[str, Any]) -> None:
         raise ValueError(
             f"ComfyUI folder must be a directory: {comfy_ui_folder}")
 
-    # Create a custom run_nvidia_gpu.bat file
+    # Create a run_nvidia_gpu_custom.bat file
     nvidia_gpu_path = os.path.join(comfy_ui_folder, "run_nvidia_gpu_custom.bat")
     custom_output_directory = config_general.get("outputs_directory")
     nvidia_gpu_path = create_run_nvidia_gpu_bat_file(nvidia_gpu_path, custom_output_directory)
-
-    # Set shortcut to the run_nvidia_gpu_custom.bat file
+    
+    # Set shortcut from the run_nvidia_gpu_custom.bat file
     restore_settings_config = config.get("restore-settings", {})
     shortcut_path = restore_settings_config.get("shortcut_path", {})
     if shortcut_path is None:
-        print("Shortcut path is not set in the restore-settings section of the config.json file, skipping shortcut creation")
+        click.echo("Shortcut path is not set in the restore-settings section of the config.json file, skipping shortcut creation")
     else:
         create_symlink(source_path=nvidia_gpu_path, target_path=shortcut_path)
-
+    
     # Clone repos in custon nodes folder
     repositories = restore_settings_config.get("repositories", [])
     custom_nodes_path = os.path.join(comfy_ui_folder, "ComfyUI", "custom_nodes")
@@ -225,19 +212,22 @@ def restore_settings(config: dict[str, Any]) -> None:
         clone_custom_nodes_repo(custom_nodes_path, repo_url, python_path)
 
     # Create model symlink
-    source_models_path = config.get("model_folder")
+    source_models_path = config.get("general").get("models_folder")
     destination_models_path = os.path.join(comfy_ui_folder, "ComfyUI", "models")
     symlink_path = create_symlink(source_models_path, destination_models_path)
-
-    # install requirements
+    
+    # Install requirements in custom nodes
     custom_nodes_path = os.path.join(comfy_ui_folder, "ComfyUI", "custom_nodes")
     for repo_name in os.listdir(custom_nodes_path):
         repo_path = os.path.join(custom_nodes_path, repo_name)
         install_requirements(repo_path, python_path)
 
 
-def run() -> None:
+def run(config: dict[str, Any] | None = None) -> None:
     """
     Run the restore_settings command.
+    If config is not provided, it is loaded from the default config file.
     """
-    restore_settings(config=load_config())
+    if config is None:
+        config = load_config()
+    restore_settings(config=config)

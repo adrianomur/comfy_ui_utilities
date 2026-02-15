@@ -75,24 +75,16 @@ def cmd_mirror_copy(
     general_config = config.get("general", {})
     source = source or mirror_copy_config.get("source")
     destination = destination or general_config.get("models_folder")
-    try:
-        mirror_copy(source, destination)
-        click.echo("Mirror copy completed.")
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
+    mirror_copy(source, destination)
+    click.echo("Mirror copy completed.")
 
 
 @cli.command("restore-settings", help="Restore ComfyUI settings")
 @click.pass_context
 def cmd_restore_settings(ctx: click.Context) -> None:
     config = ctx.obj["config"]
-    try:
-        restore_settings(config=config)
-        click.echo("Settings restored successfully.")
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
+    restore_settings(config=config)
+    click.echo("Settings restored successfully.")
 
 
 @cli.command("remove-unused", help="Remove unused models based on last access time")
@@ -108,22 +100,12 @@ def cmd_restore_settings(ctx: click.Context) -> None:
     help="Minimum number of days since last access.",
 )
 def cmd_remove_unused(folder: str, days: int) -> None:
-    try:
-        remove_unused_models(folder, days)
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise SystemExit(1)
-
+    remove_unused_models(folder, days)
+    
 
 def main(argv: list[str] | None = None) -> int:
-    try:
-        exit_code = cli.main(args=argv, standalone_mode=False)
-        return exit_code if exit_code is not None else 0
-    except click.ClickException:
-        raise
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        return 1
+    exit_code = cli.main(args=argv, standalone_mode=False)
+    return exit_code if exit_code is not None else 0
 
 
 if __name__ == "__main__":
