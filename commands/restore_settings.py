@@ -219,7 +219,7 @@ def restore_settings(config: dict[str, Any]) -> None:
     # Create workflows symlink
     source_workflows_path = config.get("restore-settings").get("workflows_path")
     workflows_path = os.path.join(comfy_ui_folder, "ComfyUI", "user", "default", "workflows")
-    create_symlink(workflows_path, source_workflows_path)
+    create_symlink(source_workflows_path, workflows_path)
     
     # Install requirements in custom nodes
     custom_nodes_path = os.path.join(comfy_ui_folder, "ComfyUI", "custom_nodes")
