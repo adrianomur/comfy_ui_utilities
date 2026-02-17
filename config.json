@@ -12,13 +12,14 @@
   },
   "restore-settings": {
     "shortcut_path": "C:\\Users\\adriano\\Desktop\\ComfyUI",
-    "workflows_path": "C:\\Users\\adriano\\Desktop\\workflows",
+    "workflows_path": "C:\\Users\\adriano\\SynologyDrive\\projects\\cg\\ai_generated\\workflows",
     "repositories": [
       "https://github.com/Comfy-Org/ComfyUI-Manager.git",
       "https://github.com/Lightricks/ComfyUI-LTXVideo.git",
       "https://github.com/crystian/ComfyUI-Crystools.git",
       "https://github.com/jtydhr88/ComfyUI-qwenmultiangle.git",
-      "https://github.com/flybirdxx/ComfyUI-Qwen-TTS.git"
+      "https://github.com/flybirdxx/ComfyUI-Qwen-TTS.git",
+      "https://github.com/MohammadAboulEla/ComfyUI-iTools.git"
     ]
   }
 }
