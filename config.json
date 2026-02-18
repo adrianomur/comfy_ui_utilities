@@ -23,9 +23,6 @@
       "https://github.com/stavsap/comfyui-ollama.git",
       "https://github.com/rgthree/rgthree-comfy.git",
       "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git",
-      "https://github.com/shiimizu/ComfyUI-TiledDiffusion.git",
-      "https://github.com/city96/ComfyUI-GGUF.git",
-      "https://github.com/nunchaku-ai/ComfyUI-nunchaku.git",
       "https://github.com/shiimizu/ComfyUI-TiledDiffusion.git"
     ]
   }
